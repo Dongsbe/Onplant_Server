@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>On-Plant</title>
-  <link rel="stylesheet" href="/static/styles.css?v=web18">
+  <link rel="stylesheet" href="/static/styles.css?v=web19">
 </head>
 <body>
   <section class="login-screen" id="loginScreen">
@@ -12,13 +12,12 @@
       <div class="brand login-brand"><div class="brand-mark">🌱</div><div><div class="brand-title">On-Plant</div><div class="brand-sub">계정별 반려식물 로봇</div></div></div>
       <div class="login-tabs"><button class="login-tab active" id="loginTab">로그인</button><button class="login-tab" id="registerTab">회원가입</button></div>
       <div class="login-form">
-        <label>아이디<input id="loginUsername" autocomplete="username" value="demo"></label>
-        <label>비밀번호<input id="loginPassword" type="password" autocomplete="current-password" value="1234"></label>
+        <label>아이디<input id="loginUsername" autocomplete="username"></label>
+        <label>비밀번호<input id="loginPassword" type="password" autocomplete="current-password"></label>
         <label class="register-only hidden">표시 이름<input id="displayName" value="사용자"></label>
         <label class="register-only hidden">식물 이름<input id="registerPlantName" value="하월시아"></label>
         <button class="primary" id="loginSubmit">로그인</button>
       </div>
-      <p class="login-help">사용자: demo / 1234 · 관리자: admin / 1234</p>
     </div>
   </section>
 
@@ -148,6 +147,6 @@
 
   <div class="modal-backdrop hidden" id="profileModal"><div class="modal"><div class="section-head"><h2>프로필 편집</h2><button id="profileCancel">닫기</button></div><div class="profile-edit"><div class="profile-preview" id="profilePreview"></div><div class="profile-fields"><label>식물 이름<input id="profilePlantName" maxlength="64"></label><label>프로필 사진<input id="profileImage" type="file" accept="image/*"></label><div class="editor-actions"><button class="primary" id="profileSave">저장</button><button id="profileImageClear">사진 제거</button></div></div></div></div></div>
   <div class="toast" id="toast">저장되었습니다.</div>
-  <script src="/static/app.js?v=web18"></script>
+  <script src="/static/app.js?v=web19"></script>
 </body>
 </html>

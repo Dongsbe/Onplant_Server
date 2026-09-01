@@ -18,7 +18,7 @@ from random import choices, uniform
 from threading import Lock
 from typing import Any
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -65,6 +65,7 @@ class UserPublic(BaseModel):
     display_name: str
     robot_id: str
     role: str = "user"
+    token: str = ""
 
 
 class RobotCreate(BaseModel):
@@ -271,6 +272,7 @@ _next_command_id = 1
 _next_post_id = 1
 _robots: dict[str, RobotPublic] = {}
 _users: dict[str, dict[str, str]] = {}
+_sessions: dict[str, str] = {}
 _configs: dict[str, RobotConfig] = {}
 _latest_readings: dict[str, StoredReading] = {}
 _history: dict[str, deque[StoredReading]] = defaultdict(lambda: deque(maxlen=500))
@@ -280,6 +282,7 @@ _lidar_latest: dict[str, StoredLidarFrame] = {}
 _move_logs: dict[str, deque[StoredMoveLog]] = defaultdict(lambda: deque(maxlen=200))
 _display_states: dict[str, DisplayState] = {}
 _llm_listen_until: dict[str, datetime] = {}
+_last_blocked_notice_at: dict[str, datetime] = {}
 _next_move_log_id = 1
 
 
@@ -314,13 +317,44 @@ def _normalize_board_category(category: str | None) -> str:
     return "자유게시판" if category == "자유게시판" else "공지"
 
 
-def _user_public(username: str) -> UserPublic:
+def _issue_session(username: str) -> str:
+    token = uuid.uuid4().hex
+    _sessions[token] = username
+    return token
+
+
+def _username_from_authorization(authorization: str | None) -> str | None:
+    if not authorization:
+        return None
+    value = authorization.strip()
+    if value.lower().startswith("bearer "):
+        value = value[7:].strip()
+    username = _sessions.get(value)
+    return username if username in _users else None
+
+
+def _require_user(authorization: str | None) -> dict[str, str]:
+    username = _username_from_authorization(authorization)
+    if not username:
+        raise HTTPException(status_code=401, detail="login required")
+    return _users[username]
+
+
+def _require_admin(authorization: str | None) -> dict[str, str]:
+    user = _require_user(authorization)
+    if user.get("role", "user") != "admin":
+        raise HTTPException(status_code=403, detail="admin required")
+    return user
+
+
+def _user_public(username: str, token: str = "") -> UserPublic:
     user = _users[username]
     return UserPublic(
         username=user["username"],
         display_name=user["display_name"],
         robot_id=user["robot_id"],
         role=user.get("role", "admin" if username == "admin" else "user"),
+        token=token,
     )
 
 
@@ -768,7 +802,19 @@ WAKE_WORDS = (
     "동수비",
     "동쓰비",
     "동스피",
+    "동스뷔",
+    "동시뷔",
+    "동십이",
+    "동씹이",
+    "동스베",
+    "동수베",
+    "통스비",
+    "통시비",
     "돈스비",
+    "돈시비",
+    "돈습이",
+    "둥스비",
+    "둥시비",
 )
 
 
@@ -970,8 +1016,12 @@ def _process_llm_chat_locked(robot_id: str, chat: LlmChatIn) -> LlmChatOut:
     if is_moving and command_name != "stop":
         _llm_listen_until.pop(robot_id, None)
         reply = _blocked_while_running_reply(motion_state)
-        if chat.speak:
+        now_dt = datetime.now(timezone.utc)
+        last_notice = _last_blocked_notice_at.get(robot_id)
+        should_speak_blocked = not last_notice or now_dt - last_notice > timedelta(seconds=10)
+        if chat.speak and should_speak_blocked:
             _append_command_locked(robot_id, CommandIn(command="speak", value=reply))
+            _last_blocked_notice_at[robot_id] = now_dt
         _save_state()
         return LlmChatOut(
             reply=reply,
@@ -1193,8 +1243,9 @@ def register_user(user: UserCreate) -> UserPublic:
             "password_hash": _hash_password(user.password),
             "robot_id": robot_id,
         }
+        token = _issue_session(user.username)
         _save_state()
-        return _user_public(user.username)
+        return _user_public(user.username, token)
 
 
 @app.post("/api/auth/login", response_model=UserPublic)
@@ -1204,7 +1255,7 @@ def login_user(login: LoginIn) -> UserPublic:
         if not user or user["password_hash"] != _hash_password(login.password):
             raise HTTPException(status_code=401, detail="invalid username or password")
         _ensure_robot(user["robot_id"])
-        return _user_public(login.username)
+        return _user_public(login.username, _issue_session(login.username))
 
 
 @app.get("/api/robots", response_model=list[RobotPublic])
@@ -1214,8 +1265,9 @@ def list_robots() -> list[RobotPublic]:
 
 
 @app.post("/api/robots", response_model=RobotPublic)
-def create_robot(robot: RobotCreate) -> RobotPublic:
+def create_robot(robot: RobotCreate, authorization: str | None = Header(default=None)) -> RobotPublic:
     with _lock:
+        _require_admin(authorization)
         if robot.robot_id in _robots:
             raise HTTPException(status_code=409, detail="robot_id already exists")
         public = RobotPublic(
@@ -1232,8 +1284,11 @@ def create_robot(robot: RobotCreate) -> RobotPublic:
 
 
 @app.patch("/api/robots/{robot_id}", response_model=RobotPublic)
-def update_robot(robot_id: str, robot: RobotUpdate) -> RobotPublic:
+def update_robot(robot_id: str, robot: RobotUpdate, authorization: str | None = Header(default=None)) -> RobotPublic:
     with _lock:
+        user = _require_user(authorization)
+        if user.get("role", "user") != "admin" and user.get("robot_id") != robot_id:
+            raise HTTPException(status_code=403, detail="robot access denied")
         _ensure_robot(robot_id)
         current = _robots[robot_id]
         if robot.name is not None:
@@ -1354,10 +1409,11 @@ def sensor_history(robot_id: str, limit: int = 100) -> list[StoredReading]:
 
 
 @app.delete("/api/robots/{robot_id}/history")
-def clear_sensor_history(robot_id: str) -> dict[str, Any]:
+def clear_sensor_history(robot_id: str, authorization: str | None = Header(default=None)) -> dict[str, Any]:
     global _next_sensor_id
 
     with _lock:
+        _require_admin(authorization)
         count = len(_history.get(robot_id, []))
         _history[robot_id].clear()
         if not any(_history.values()):
@@ -1374,9 +1430,19 @@ def get_robot_config(robot_id: str) -> RobotConfig:
 
 
 @app.patch("/api/robots/{robot_id}/config", response_model=RobotConfig)
-def update_robot_config(robot_id: str, config: RobotConfig) -> RobotConfig:
+def update_robot_config(robot_id: str, config: RobotConfig, authorization: str | None = Header(default=None)) -> RobotConfig:
+    public_fields = {"speaker_volume", "display_brightness", "display_text", "default_region", "camera_enabled", "camera_url"}
     with _lock:
         _ensure_robot(robot_id)
+        current = _configs[robot_id]
+        changed = {name for name, value in config.model_dump().items() if getattr(current, name) != value}
+        username = _username_from_authorization(authorization)
+        if changed - public_fields:
+            _require_admin(authorization)
+        elif username:
+            user = _users[username]
+            if user.get("role", "user") != "admin" and user.get("robot_id") != robot_id:
+                raise HTTPException(status_code=403, detail="robot access denied")
         _configs[robot_id] = config
         _robots[robot_id].camera_url = config.camera_url
         _save_state()
@@ -1384,8 +1450,9 @@ def update_robot_config(robot_id: str, config: RobotConfig) -> RobotConfig:
 
 
 @app.post("/api/robots/{robot_id}/commands", response_model=StoredCommand)
-def create_robot_command(robot_id: str, command: CommandIn) -> StoredCommand:
+def create_robot_command(robot_id: str, command: CommandIn, authorization: str | None = Header(default=None)) -> StoredCommand:
     with _lock:
+        _require_admin(authorization)
         stored = _append_command_locked(robot_id, command)
         _save_state()
         return stored
@@ -1399,8 +1466,12 @@ def list_robot_commands(robot_id: str, limit: int = 30) -> list[StoredCommand]:
 
 
 @app.post("/api/robots/{robot_id}/llm/chat", response_model=LlmChatOut)
-def llm_chat(robot_id: str, chat: LlmChatIn) -> LlmChatOut:
+def llm_chat(robot_id: str, chat: LlmChatIn, authorization: str | None = Header(default=None)) -> LlmChatOut:
     with _lock:
+        message = _strip_wake_word(chat.message.strip())
+        _intent, command_name = _classify_robot_intent(message)
+        if command_name:
+            _require_admin(authorization)
         return _process_llm_chat_locked(robot_id, chat)
 
 
@@ -1574,8 +1645,9 @@ def create_move_log(robot_id: str, log: MoveLogIn) -> StoredMoveLog:
 
 
 @app.delete("/api/robots/{robot_id}/activity")
-def clear_robot_activity(robot_id: str) -> dict[str, Any]:
+def clear_robot_activity(robot_id: str, authorization: str | None = Header(default=None)) -> dict[str, Any]:
     with _lock:
+        _require_admin(authorization)
         _ensure_robot(robot_id)
         move_count = len(_move_logs.get(robot_id, []))
         command_count = len(_commands.get(robot_id, []))
@@ -1621,8 +1693,9 @@ def remote_button(robot_id: str, remote: RemoteIn) -> DisplayState:
 
 
 @app.get("/api/admin/users")
-def admin_users() -> list[dict[str, str]]:
+def admin_users(authorization: str | None = Header(default=None)) -> list[dict[str, str]]:
     with _lock:
+        _require_admin(authorization)
         return [
             {
                 "username": user["username"],
@@ -1635,11 +1708,12 @@ def admin_users() -> list[dict[str, str]]:
 
 
 @app.post("/api/admin/link-robot", response_model=UserPublic)
-def admin_link_robot(payload: dict[str, str]) -> UserPublic:
+def admin_link_robot(payload: dict[str, str], authorization: str | None = Header(default=None)) -> UserPublic:
     username = payload.get("username", "").strip()
     code = payload.get("link_code", "").strip().upper()
     robot_id = payload.get("robot_id", "").strip()
     with _lock:
+        _require_admin(authorization)
         if username not in _users:
             raise HTTPException(status_code=404, detail="user not found")
         if code:

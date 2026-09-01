@@ -61,10 +61,31 @@ function showToast(message) {
   setTimeout(() => toast.classList.remove("show"), 1600);
 }
 
-async function api(url, options) {
-  const response = await fetch(url, options);
+async function api(url, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (state.user?.token) headers.Authorization = `Bearer ${state.user.token}`;
+  const response = await fetch(url, { ...options, headers });
   if (!response.ok) throw new Error(await response.text());
   return response.json();
+}
+
+async function verifyCurrentAdminPassword() {
+  if (!isAdmin()) return false;
+  const password = window.prompt("전체화면을 해제하려면 관리자 비밀번호를 입력하세요.");
+  if (!password) return false;
+  try {
+    const user = await api("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: state.user.username, password }),
+    });
+    state.user = { ...state.user, token: user.token || state.user.token };
+    sessionStorage.setItem("onplant_user", JSON.stringify(state.user));
+    return true;
+  } catch {
+    showToast("관리자 비밀번호를 확인하세요.");
+    return false;
+  }
 }
 
 function showApp(user) {
@@ -750,6 +771,8 @@ async function enterFullscreen() {
   const root = document.documentElement;
   try {
     if (document.fullscreenElement) {
+      const verified = await verifyCurrentAdminPassword();
+      if (!verified) return;
       await document.exitFullscreen();
       syncFullscreenLayout();
       return;

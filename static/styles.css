@@ -1132,7 +1132,7 @@ label > select {
   min-height: 760px;
   margin: 0 auto;
   display: grid;
-  grid-template-rows: max-content minmax(240px, 0.35fr) minmax(420px, 0.65fr);
+  grid-template-rows: auto minmax(280px, 0.45fr) minmax(480px, 0.55fr);
   gap: 14px;
 }
 
@@ -1155,8 +1155,8 @@ label > select {
   margin: 0;
   white-space: pre-wrap;
   font-family: Consolas, "Courier New", monospace;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.35;
   font-weight: 800;
 }
 
@@ -1202,6 +1202,12 @@ label > select {
 .kiosk-fullscreen .kiosk-shell {
   height: calc(100vh - 20px);
   min-height: 0;
+  grid-template-rows: auto minmax(320px, 0.48fr) minmax(520px, 0.52fr);
+}
+
+.kiosk-fullscreen .kiosk-status {
+  column-count: 2;
+  column-gap: 28px;
 }
 
 @media (max-width: 820px) {
