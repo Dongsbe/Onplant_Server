@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>On-Plant</title>
+  <link rel="stylesheet" href="/static/styles.css?v=web18">
+</head>
+<body>
+  <section class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="brand login-brand"><div class="brand-mark">🌱</div><div><div class="brand-title">On-Plant</div><div class="brand-sub">계정별 반려식물 로봇</div></div></div>
+      <div class="login-tabs"><button class="login-tab active" id="loginTab">로그인</button><button class="login-tab" id="registerTab">회원가입</button></div>
+      <div class="login-form">
+        <label>아이디<input id="loginUsername" autocomplete="username" value="demo"></label>
+        <label>비밀번호<input id="loginPassword" type="password" autocomplete="current-password" value="1234"></label>
+        <label class="register-only hidden">표시 이름<input id="displayName" value="사용자"></label>
+        <label class="register-only hidden">식물 이름<input id="registerPlantName" value="하월시아"></label>
+        <button class="primary" id="loginSubmit">로그인</button>
+      </div>
+      <p class="login-help">사용자: demo / 1234 · 관리자: admin / 1234</p>
+    </div>
+  </section>
+
+  <div class="app hidden" id="appRoot">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark">🌱</div><div><div class="brand-title">On-Plant</div><div class="brand-sub">Robot Plant Care</div></div></div>
+      <nav class="nav" id="mainNav">
+        <button class="nav-item active" data-view="dashboard"><span class="nav-icon">🏠</span><span class="nav-label">대시보드</span></button>
+        <button class="nav-item" data-view="live"><span class="nav-icon">📡</span><span class="nav-label">실시간 화면</span></button>
+        <button class="nav-item" data-view="history"><span class="nav-icon">📈</span><span class="nav-label">센서 기록</span></button>
+        <button class="nav-item" data-view="move"><span class="nav-icon">🧭</span><span class="nav-label">실행 로그</span></button>
+        <button class="nav-item" data-view="control"><span class="nav-icon">🎛</span><span class="nav-label">제어/설정</span></button>
+        <button class="nav-item" data-view="board"><span class="nav-icon">💬</span><span class="nav-label">관리 게시판</span></button>
+        <button class="nav-item admin-only hidden" data-view="kiosk"><span class="nav-icon">🖥</span><span class="nav-label">키오스크</span></button>
+        <button class="nav-item admin-only hidden" data-view="admin"><span class="nav-icon">🔗</span><span class="nav-label">계정/로봇</span></button>
+      </nav>
+      <div class="sidebar-foot"><div class="tiny-label">로그인 계정</div><strong id="currentUser">--</strong><button id="logoutButton" style="width:100%; margin-top:10px;">로그아웃</button></div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar"><div><h1 id="pageTitle">메인 대시보드</h1><p id="pageSub">하월시아 기준으로 식물 상태를 확인합니다.</p></div></header>
+
+      <section class="view active" id="view-dashboard">
+        <div class="plant-header"><div class="plant-avatar" id="plantAvatar"></div><div><div class="plant-title-line"><div class="plant-name" id="plantName">하월시아</div><button class="icon-edit" id="editPlantName" title="식물 이름과 사진 수정">✎</button></div><div class="robot-meta"><span class="muted" id="robotName">Raspbot A</span><span class="connection-pill offline" id="connectionPill">오프라인</span></div></div><div class="status-pill" id="statusPill">대기</div></div>
+        <div class="dashboard-grid">
+          <article class="panel summary-card"><h2>식물 상태 요약</h2><div class="status-line"><span class="face" id="statusEmoji">⏳</span><span>현재 상태 : <strong id="statusLevel">대기</strong></span></div><p id="statusMessage">아직 수신된 센서 데이터가 없습니다.</p></article>
+          <article class="panel metric"><div class="metric-icon danger">🌡</div><div class="metric-title">온도</div><div class="metric-value"><span id="temperature">--</span>°C</div></article>
+          <article class="panel metric"><div class="metric-icon water">💧</div><div class="metric-title">습도</div><div class="metric-value"><span id="humidity">--</span>%</div></article>
+          <article class="panel recommend-card"><h2>관리 추천 메시지</h2><div class="recommend"><div class="bot-icon">🤖</div><div id="recommendation">라즈봇 센서 데이터가 들어오면 추천 메시지를 표시합니다.</div></div></article>
+          <article class="panel metric"><div class="metric-icon sun">☀</div><div class="metric-title">조도</div><div class="metric-value"><span id="lux">--</span> lx</div></article>
+          <article class="panel metric"><div class="metric-icon soil">🌱</div><div class="metric-title">토양수분</div><div class="metric-value"><span id="soil">--</span>%</div></article>
+        </div>
+        <div class="quick-grid single"><article class="panel plant-profile"><h2>식물 기준</h2><div class="info-list"><div><span>식물 종류</span><strong id="plantSpecies">하월시아</strong></div><div><span>일상 조도</span><strong id="dailyLuxRange">300~800 lux</strong></div><div><span>최적 탐색 조도</span><strong id="luxTarget">800~900 lux</strong></div><div><span>권장 온도</span><strong id="tempRange">18~28°C</strong></div><div><span>권장 습도</span><strong id="humidityRange">35~60%</strong></div><div><span>토양수분</span><strong id="soilRange">20~45%</strong></div></div><p class="profile-note hidden" id="plantNote"></p></article></div>
+      </section>
+
+      <section class="view" id="view-live">
+        <div class="panel camera-panel"><div class="section-head"><h2>카메라 화면</h2><span class="pill" id="cameraState">카메라 대기</span></div><div class="video-box" id="videoBox"><div><div class="video-icon">📷</div><div id="cameraText">카메라 스트리밍은 로봇 카메라 연결 후 표시됩니다.</div></div></div></div>
+        <div class="panel lidar-panel"><div class="section-head"><h2>LiDAR 실시간 맵</h2><div class="lidar-meta"><span id="lidarState">대기</span><span id="lidarUpdated">--</span></div></div><div class="live-phase-card" id="lidarPhaseCard"><div><span class="tiny-label">현재 단계</span><strong id="phaseLabel">대기</strong></div><div><span class="tiny-label">탐색 최고점</span><strong id="phaseBest">--</strong></div><div><span class="tiny-label">현재 오차</span><strong id="phaseLux">--</strong></div><div><span class="tiny-label">복귀 진행</span><strong id="phaseReturn">--</strong></div><div><span class="tiny-label">2차 탐색</span><strong id="phaseSeek">--</strong></div></div><canvas id="lidarCanvas" width="900" height="520"></canvas><div class="lidar-legend"><span><i class="dot robot"></i>로봇</span><span><i class="dot point"></i>감지점</span><span><i class="dot danger"></i>전방 위험</span></div></div>
+      </section>
+
+      <section class="view" id="view-history"><div class="panel"><div class="section-head"><div><h2>센서 기록</h2><p class="muted section-note">센서값은 실시간으로 수신하고, 기록은 10분 간격과 주요 상태 변화 시 저장합니다.</p></div><button id="clearHistory">기록 삭제</button></div><canvas id="historyChart" width="1100" height="260"></canvas><div class="table-wrap"><table><thead><tr><th>기록 순번</th><th>시간</th><th>조도</th><th>온도</th><th>습도</th><th>토양수분</th></tr></thead><tbody id="historyRows"></tbody></table></div></div></section>
+
+      <section class="view" id="view-move"><div class="panel"><div class="section-head"><h2>실행 로그</h2><span class="muted">입력 명령과 FSM 상태 변화를 시간순으로 확인합니다.</span></div><div id="moveRows" class="log-list move-list"></div></div></section>
+
+      <section class="view" id="view-control"><div class="control-grid single-column">
+        <article class="panel"><h2>사용자 설정</h2><p class="muted section-note">일상적으로 사용하는 출력과 지역 설정입니다.</p><div class="form-grid"><label>스피커 음량<input id="speakerVolume" type="range" min="0" max="100"><output id="speakerVolumeValue">60%</output></label><label>화면 밝기<input id="displayBrightness" type="range" min="0" max="100"><output id="displayBrightnessValue">80%</output></label><label>기본 지역<input id="defaultRegion" maxlength="80" value="진주"></label></div><button class="primary" id="saveConfig">설정 저장</button></article>
+      </div></section>
+
+      <section class="view" id="view-board"><div class="board-layout">
+        <article class="panel board-menu"><h2>목차</h2><button class="category active" data-category="전체">전체</button><button class="category" data-category="공지">공지</button><button class="category" data-category="자유게시판">자유게시판</button></article>
+        <article class="panel board-list" id="boardList"><div class="section-head"><h2>게시글</h2><button class="primary" id="newPostButton">글쓰기</button></div><div id="posts" class="posts title-only"></div></article>
+        <article class="panel post-detail hidden" id="postDetail"><div class="section-head"><h2 id="postDetailTitle">게시글</h2><button id="postDetailClose">목록</button></div><div class="post-detail-meta" id="postDetailMeta"></div><div class="post-detail-body" id="postDetailBody"></div><div class="editor-actions"><button id="postEditButton">수정</button><button id="postDeleteButton">삭제</button></div></article>
+        <article class="panel post-editor hidden" id="postEditor"><h2 id="postEditorTitle">글쓰기</h2><div class="post-form"><input id="editingPostId" type="hidden"><label>분류<select id="postCategory"><option selected>공지</option><option>자유게시판</option></select></label><label>제목<input id="postTitle" placeholder="제목"></label><label>내용<textarea id="postBody" placeholder="관리 방법, 점검 기록, 문제 해결 내용을 적어두세요."></textarea></label><div class="editor-actions"><button class="primary" id="postSubmit">저장</button><button id="postCancel">취소</button></div></div></article>
+      </div></section>
+
+      <section class="view" id="view-admin">
+        <div class="admin-grid">
+          <article class="panel">
+            <h2>계정 목록</h2>
+            <div id="adminUsers" class="log-list"></div>
+          </article>
+          <article class="panel">
+            <h2>로봇 연동</h2>
+            <div class="form-grid single">
+              <label>사용자 아이디<input id="linkUsername" placeholder="demo"></label>
+              <label>로봇 고유코드<input id="linkCode" placeholder="OP-0000-0000"></label>
+              <label>또는 로봇 ID<input id="linkRobotId" placeholder="raspbot-a"></label>
+            </div>
+            <div class="admin-actions">
+              <button class="primary" id="linkRobotButton">연동 변경</button>
+              <button id="openKioskMode">키오스크 모드 열기</button>
+            </div>
+            <p class="profile-note">라즈봇이 부팅 시 고유코드를 보내면 관리자가 해당 코드를 계정에 연결하는 흐름입니다.</p>
+          </article>
+          <article class="panel admin-wide">
+            <h2>탐색 설정</h2>
+            <p class="muted section-note">주행과 생육 기준에 직접 영향을 주는 관리자 전용 설정입니다.</p>
+            <div class="form-grid">
+              <label>탐색 시간(초)<input id="adminExploreSeconds" type="number" min="5" max="600"></label>
+              <label>일상 조도 최소<input id="adminDailyLuxMin" type="number" min="0" max="20000"></label>
+              <label>일상 조도 최대<input id="adminDailyLuxMax" type="number" min="0" max="20000"></label>
+              <label>최적 탐색 조도 최소<input id="adminSearchLuxMin" type="number" min="0" max="20000"></label>
+              <label>최적 탐색 조도 최대<input id="adminSearchLuxMax" type="number" min="0" max="20000"></label>
+              <label>조도 과다 기준<input id="adminExcessLux" type="number" min="0" max="20000"></label>
+            </div>
+            <button class="primary" id="saveAdminConfig">탐색 설정 저장</button>
+          </article>
+          <article class="panel admin-wide">
+            <h2>로봇 명령</h2>
+            <div class="drive-command-row"><button class="primary" id="startLightSearch">최적 조도 탐색 시작</button><button class="danger-button" id="stopRobot">정지</button></div>
+            <div class="chat-command"><label>텍스트 명령/대화<input id="chatCommandInput" placeholder="예: 오늘 상태 어때?"></label><button class="primary" id="sendChatCommand">전송</button></div>
+            <div class="chat-reply hidden" id="chatReply"></div>
+            <h2 class="sub-panel-title">명령 로그</h2><div id="commandRows" class="log-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="view-kiosk">
+        <div class="kiosk-shell">
+          <article class="panel kiosk-status-panel">
+            <div class="section-head"><h2>실행 상태</h2><div class="kiosk-head-actions"><span class="pill" id="kioskUpdated">대기</span><button id="clearKioskLog">로그 초기화</button><button id="enterFullscreen">전체화면</button></div></div>
+            <pre id="kioskStatusRows" class="kiosk-status">현재 상태: IDLE
+최근 입력: 대기 중
+현재 동작: STOP
+현재 조도: --
+목표 조도: --
+최고 조도: --
+현재 좌표: --
+목표 좌표: --
+실행 상태: 대기
+남은 시간: --
+장애물 상태: clear</pre>
+          </article>
+          <article class="panel kiosk-log-panel">
+            <div class="section-head"><h2>실행 로그</h2><span class="muted">명령과 FSM 상태 변화</span></div>
+            <pre id="kioskLogRows" class="kiosk-terminal">입력 대기 상태입니다.</pre>
+          </article>
+          <article class="panel kiosk-map-panel">
+            <div class="section-head"><h2>LiDAR 실시간 맵</h2><span class="muted" id="kioskObstacle">장애물 대기</span></div>
+            <canvas id="kioskLidarCanvas" width="720" height="760"></canvas>
+            <div class="lidar-legend"><span><i class="dot robot"></i>로봇</span><span><i class="dot point"></i>감지점</span><span><i class="dot danger"></i>전방 위험</span></div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop hidden" id="profileModal"><div class="modal"><div class="section-head"><h2>프로필 편집</h2><button id="profileCancel">닫기</button></div><div class="profile-edit"><div class="profile-preview" id="profilePreview"></div><div class="profile-fields"><label>식물 이름<input id="profilePlantName" maxlength="64"></label><label>프로필 사진<input id="profileImage" type="file" accept="image/*"></label><div class="editor-actions"><button class="primary" id="profileSave">저장</button><button id="profileImageClear">사진 제거</button></div></div></div></div></div>
+  <div class="toast" id="toast">저장되었습니다.</div>
+  <script src="/static/app.js?v=web18"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Runtime state / generated audio
+onplant_state.json
+voice_outputs/
+
+# Logs
+*.log
+nohup.out
+
+# Local databases / caches
+*.db
+*.sqlite
+*.sqlite3
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

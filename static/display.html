@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OnPlant Display</title>
+  <link rel="stylesheet" href="/static/display.css?v=9">
+</head>
+<body>
+  <main class="tablet" aria-label="OnPlant front display">
+    <section class="screen face idle active" data-screen="idle">
+      <div class="sprig sprig-a"></div>
+      <div class="sprig sprig-b"></div>
+      <div class="face-core gentle-core">
+        <div class="eyes glossy gentle-eyes"><i></i><i></i></div>
+        <div class="cheeks"></div>
+        <div class="mouth smile"></div>
+      </div>
+    </section>
+
+    <section class="screen face sulk" data-screen="sulk">
+      <div class="sprig sprig-a"></div>
+      <div class="sprig sprig-b"></div>
+      <div class="face-core sulk-core">
+        <div class="eyes bored"><i></i><i></i></div>
+        <div class="cheeks"></div>
+        <div class="mouth pout"></div>
+      </div>
+    </section>
+
+    <section class="screen face angry" data-screen="angry">
+      <div class="sprig sprig-a"></div>
+      <div class="sprig sprig-b"></div>
+      <div class="face-core angry-core">
+        <div class="brows"><i></i><i></i></div>
+        <div class="eyes sharp"><i></i><i></i></div>
+        <div class="cheeks"></div>
+        <div class="mouth angry-mouth"></div>
+      </div>
+    </section>
+
+    <section class="screen face sleep" data-screen="sleep">
+      <div class="sprig sprig-a"></div>
+      <div class="sprig sprig-b"></div>
+      <div class="face-core sleep-core">
+        <div class="sleep-eyes"><i></i><i></i></div>
+        <div class="cheeks"></div>
+        <div class="mouth sleep-mouth"></div>
+        <div class="sleep-mark">z</div>
+      </div>
+    </section>
+
+    <section class="screen face happy" data-screen="happy">
+      <div class="sprig sprig-a"></div>
+      <div class="sprig sprig-b"></div>
+      <div class="face-core happy-core">
+        <div class="eyes glossy happy-eyes"><i></i><i></i></div>
+        <div class="cheeks"></div>
+        <div class="mouth big-smile"></div>
+      </div>
+    </section>
+
+    <section class="screen face listening" data-screen="listening">
+      <div class="sound left"><i></i><i></i><i></i><i></i></div>
+      <div class="sound right"><i></i><i></i><i></i><i></i></div>
+      <div class="face-core gentle-core">
+        <div class="eyes glossy gentle-eyes"><i></i><i></i></div>
+        <div class="cheeks"></div>
+        <div class="mouth smile"></div>
+      </div>
+      <div class="bubble">
+        <strong>듣고 있어요</strong>
+        <span>음성 명령 인식 중</span>
+      </div>
+    </section>
+
+    <section class="screen face analyzing" data-screen="analyzing">
+      <div class="scan scan-a"></div>
+      <div class="scan scan-b"></div>
+      <div class="face-core gentle-core">
+        <div class="eyes glossy gentle-eyes"><i></i><i></i></div>
+        <div class="cheeks"></div>
+        <div class="mouth smile"></div>
+      </div>
+      <div class="bubble">
+        <strong>식물 상태 분석 중</strong>
+        <span>센서 데이터를 확인하고 있어요</span>
+        <em><i></i><i></i><i></i></em>
+      </div>
+    </section>
+
+    <section class="screen report" data-screen="report">
+      <div class="report-shell">
+        <h1>식물 상태 리포트</h1>
+        <div class="report-card">
+          <strong id="reportTitle">현재 상태</strong>
+          <span id="reportMessage">최신 센서 데이터를 확인하고 있습니다.</span>
+          <b id="reportRecommend">현재 환경을 유지하고 주기적으로 확인하세요.</b>
+        </div>
+        <div class="metric-grid">
+          <div><span>온도</span><strong id="dTemp">--°C</strong></div>
+          <div><span>습도</span><strong id="dHum">--%</strong></div>
+          <div><span>조도</span><strong id="dLux">-- lux</strong></div>
+          <div><span>토양수분</span><strong id="dSoil">--%</strong></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="/static/display.js?v=9"></script>
+</body>
+</html>
