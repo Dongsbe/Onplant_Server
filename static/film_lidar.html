@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OnPlant Film LiDAR</title>
+  <link rel="stylesheet" href="/static/film_capture.css?v=film1">
+</head>
+<body class="film-capture">
+  <main class="film-page film-square">
+    <header class="film-title">
+      <div>
+        <h1>LiDAR 실시간 맵</h1>
+        <p>주변 장애물을 실시간으로 인식합니다.</p>
+      </div>
+      <div class="film-clock" id="filmClock">--:--:--</div>
+    </header>
+    <article class="panel film-panel film-lidar-panel">
+      <div class="film-section-head">
+        <h2>실시간 감지</h2>
+        <span class="film-meta" id="filmObstacle">clear / 0 pts</span>
+      </div>
+      <canvas id="filmLidarCanvas" width="900" height="900"></canvas>
+      <div class="film-lidar-legend">
+        <span><i class="dot robot"></i>로봇</span>
+        <span><i class="dot point"></i>감지점</span>
+        <span><i class="dot danger"></i>전방 위험</span>
+      </div>
+    </article>
+  </main>
+  <script src="/static/film_capture.js?v=film1"></script>
+</body>
+</html>

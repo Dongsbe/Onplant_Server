@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OnPlant Film Logs</title>
+  <link rel="stylesheet" href="/static/film_capture.css?v=film1">
+</head>
+<body class="film-capture">
+  <main class="film-page film-square film-logs-page">
+    <header class="film-title">
+      <div>
+        <h1>실행 상태</h1>
+        <p>명령과 주행 상태 변화를 실시간으로 표시합니다.</p>
+      </div>
+      <div class="film-clock" id="filmClock">--:--:--</div>
+    </header>
+    <article class="panel film-panel">
+      <div class="film-log-layout">
+        <section>
+          <div class="film-section-head">
+            <h2>상태 로그</h2>
+            <span class="film-meta">실시간 갱신</span>
+          </div>
+          <pre id="filmStatus" class="film-status">현재 상태: IDLE
+최근 입력: 대기 중
+현재 동작: STOP
+현재 조도: --
+목표 조도: --
+최고 조도: --
+현재 좌표: --
+목표 좌표: --
+실행 상태: 대기
+남은 시간: --
+장애물 상태: clear</pre>
+        </section>
+        <section class="film-terminal-section">
+          <div class="film-section-head">
+            <h2>실행 로그</h2>
+            <span class="film-meta">명령과 FSM 상태 변화</span>
+          </div>
+          <pre id="filmLogRows" class="film-terminal">입력 대기 상태입니다.</pre>
+        </section>
+      </div>
+    </article>
+  </main>
+  <script src="/static/film_capture.js?v=film1"></script>
+</body>
+</html>
