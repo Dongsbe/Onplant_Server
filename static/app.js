@@ -65,7 +65,14 @@ async function api(url, options = {}) {
   const headers = { ...(options.headers || {}) };
   if (state.user?.token) headers.Authorization = `Bearer ${state.user.token}`;
   const response = await fetch(url, { ...options, headers });
-  if (!response.ok) throw new Error(await response.text());
+  if (!response.ok) {
+    const detail = await response.text();
+    if (response.status === 401 && !url.startsWith("/api/auth/")) {
+      showToast("로그인이 만료되었습니다. 다시 로그인하세요.");
+      showLogin();
+    }
+    throw new Error(detail || `HTTP ${response.status}`);
+  }
   return response.json();
 }
 
@@ -739,7 +746,7 @@ document.addEventListener("click", async (event) => {
     try {
       await sendRobotCommand("start_light_search", "web-start");
     } catch (error) {
-      showToast("탐색 명령 전송 실패");
+      showToast(error.message.includes("admin required") ? "관리자 권한이 필요합니다." : "탐색 명령 전송 실패");
       console.error(error);
     }
   }
@@ -748,7 +755,7 @@ document.addEventListener("click", async (event) => {
     try {
       await sendRobotCommand("stop", "web-stop");
     } catch (error) {
-      showToast("정지 명령 전송 실패");
+      showToast(error.message.includes("admin required") ? "관리자 권한이 필요합니다." : "정지 명령 전송 실패");
       console.error(error);
     }
   }
