@@ -816,6 +816,11 @@ function openKioskMode() {
   window.location.href = "/kiosk";
 }
 
+function openFilmCapture(path) {
+  if (!isAdmin()) return showToast("관리자만 사용할 수 있습니다.");
+  window.location.href = path;
+}
+
 async function saveProfile() {
   const next = $("profilePlantName").value.trim();
   if (!next) return showToast("식물 이름을 입력하세요.");
@@ -898,7 +903,13 @@ function bindEvents() {
   $("registerTab").addEventListener("click", () => setLoginMode("register"));
   $("loginSubmit").addEventListener("click", submitLogin);
   $("logoutButton").addEventListener("click", showLogin);
-  document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
+  document.querySelectorAll(".nav-item").forEach((button) => button.addEventListener("click", () => {
+    if (button.dataset.href) {
+      openFilmCapture(button.dataset.href);
+      return;
+    }
+    setView(button.dataset.view);
+  }));
   document.querySelectorAll(".category").forEach((button) => button.addEventListener("click", async () => {
     state.boardCategory = button.dataset.category;
     document.querySelectorAll(".category").forEach((item) => item.classList.toggle("active", item === button));
