@@ -1214,6 +1214,11 @@ def app_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "index.html")
 
 
+@app.get("/film-capture")
+def film_capture_page() -> FileResponse:
+    return FileResponse(STATIC_DIR / "film_capture.html")
+
+
 @app.get("/film-lidar")
 def film_lidar_page() -> FileResponse:
     return FileResponse(STATIC_DIR / "film_lidar.html")
