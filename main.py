@@ -1467,13 +1467,18 @@ def receive_sensor(reading: SensorReadingIn) -> StoredReading:
 
     with _lock:
         _ensure_robot(reading.robot_id)
+        previous = _latest_readings.get(reading.robot_id)
         stored = StoredReading(
             id=_next_sensor_id,
             robot_id=reading.robot_id,
-            lux=reading.lux,
-            temperature=reading.temperature,
-            humidity=reading.humidity,
-            soil_moisture=reading.soil_moisture,
+            lux=reading.lux if reading.lux is not None else (previous.lux if previous else None),
+            temperature=reading.temperature
+            if reading.temperature is not None
+            else (previous.temperature if previous else None),
+            humidity=reading.humidity if reading.humidity is not None else (previous.humidity if previous else None),
+            soil_moisture=reading.soil_moisture
+            if reading.soil_moisture is not None
+            else (previous.soil_moisture if previous else None),
             source=reading.source,
             received_at=_now_iso(),
         )
