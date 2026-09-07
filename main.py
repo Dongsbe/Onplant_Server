@@ -766,6 +766,9 @@ def _classify_robot_intent(message: str) -> tuple[str, str | None]:
     sensor_words = ("온도", "습도", "토양", "수분", "조도", "센서")
     vague_robot_words = ("가줘", "움직", "찾아", "해줘", "동스비", "라즈봇", "식물")
 
+    # Questions such as "날씨 어때?" are general LLM queries, not robot status commands.
+    if "날씨" in text:
+        return "chat", None
     if any(word in text for word in stop_words):
         return "robot_command", "stop"
     if any(word in text for word in search_words):
@@ -1569,7 +1572,7 @@ def llm_chat(robot_id: str, chat: LlmChatIn, authorization: str | None = Header(
         message = _strip_wake_word(chat.message.strip())
         _intent, command_name = _classify_robot_intent(message)
         if command_name:
-            _require_admin(authorization)
+            _require_admin_or_robot_key(authorization, chat.robot_key)
         elif not _robot_api_key_ok(chat.robot_key):
             _require_user(authorization)
         return _process_llm_chat_locked(robot_id, chat)
