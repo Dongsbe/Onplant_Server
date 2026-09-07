@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>On-Plant</title>
-  <link rel="stylesheet" href="/static/styles.css?v=web20">
+  <link rel="stylesheet" href="/static/styles.css?v=web21">
 </head>
 <body>
   <section class="login-screen" id="loginScreen">
@@ -55,7 +55,7 @@
       </section>
 
       <section class="view" id="view-live">
-        <div class="panel camera-panel"><div class="section-head"><h2>카메라 화면</h2><span class="pill" id="cameraState">카메라 대기</span></div><div class="video-box" id="videoBox"><div><div class="video-icon">📷</div><div id="cameraText">카메라 스트리밍은 로봇 카메라 연결 후 표시됩니다.</div></div></div></div>
+        <div class="panel camera-panel"><div class="section-head"><h2>카메라 화면</h2><span class="pill" id="cameraState">카메라 대기</span></div><div class="video-box" id="videoBox"><img id="cameraImage" alt="로봇 USB 카메라 화면" class="camera-image hidden"><div id="cameraPlaceholder"><div class="video-icon">📷</div><div id="cameraText">카메라 스트리밍은 로봇 카메라 연결 후 표시됩니다.</div></div></div></div>
         <div class="panel lidar-panel"><div class="section-head"><h2>LiDAR 실시간 맵</h2><div class="lidar-meta"><span id="lidarState">대기</span><span id="lidarUpdated">--</span></div></div><div class="live-phase-card" id="lidarPhaseCard"><div><span class="tiny-label">현재 단계</span><strong id="phaseLabel">대기</strong></div><div><span class="tiny-label">탐색 최고점</span><strong id="phaseBest">--</strong></div><div><span class="tiny-label">현재 오차</span><strong id="phaseLux">--</strong></div><div><span class="tiny-label">복귀 진행</span><strong id="phaseReturn">--</strong></div><div><span class="tiny-label">2차 탐색</span><strong id="phaseSeek">--</strong></div></div><canvas id="lidarCanvas" width="900" height="520"></canvas><div class="lidar-legend"><span><i class="dot robot"></i>로봇</span><span><i class="dot point"></i>감지점</span><span><i class="dot danger"></i>전방 위험</span></div></div>
       </section>
 
@@ -148,6 +148,6 @@
 
   <div class="modal-backdrop hidden" id="profileModal"><div class="modal"><div class="section-head"><h2>프로필 편집</h2><button id="profileCancel">닫기</button></div><div class="profile-edit"><div class="profile-preview" id="profilePreview"></div><div class="profile-fields"><label>식물 이름<input id="profilePlantName" maxlength="64"></label><label>프로필 사진<input id="profileImage" type="file" accept="image/*"></label><div class="editor-actions"><button class="primary" id="profileSave">저장</button><button id="profileImageClear">사진 제거</button></div></div></div></div></div>
   <div class="toast" id="toast">저장되었습니다.</div>
-  <script src="/static/app.js?v=web20"></script>
+  <script src="/static/app.js?v=web21"></script>
 </body>
 </html>

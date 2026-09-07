@@ -18,9 +18,9 @@ from random import choices, uniform
 from threading import Lock
 from typing import Any
 
-from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
@@ -128,6 +128,11 @@ class LidarFrameIn(BaseModel):
     points: list[LidarPoint] = Field(default_factory=list, max_length=720)
     state: str = Field(default="UNKNOWN", max_length=32)
     action: str = Field(default="STOP", max_length=32)
+    phase: str | None = Field(default=None, max_length=64)
+    detail_state: str | None = Field(default=None, max_length=64)
+    remaining_seconds: float | None = None
+    label: str | None = Field(default=None, max_length=120)
+    obstacle: str | None = Field(default=None, max_length=32)
     current_lux: float | None = None
     best_lux: float | None = None
     lux_error: float | None = None
@@ -279,6 +284,8 @@ _history: dict[str, deque[StoredReading]] = defaultdict(lambda: deque(maxlen=500
 _commands: dict[str, deque[StoredCommand]] = defaultdict(lambda: deque(maxlen=100))
 _board_posts: deque[BoardPost] = deque(maxlen=200)
 _lidar_latest: dict[str, StoredLidarFrame] = {}
+_camera_frames: dict[str, bytes] = {}
+_camera_frame_times: dict[str, str] = {}
 _move_logs: dict[str, deque[StoredMoveLog]] = defaultdict(lambda: deque(maxlen=200))
 _display_states: dict[str, DisplayState] = {}
 _llm_listen_until: dict[str, datetime] = {}
@@ -1381,6 +1388,57 @@ def receive_lidar_frame(robot_id: str, frame: LidarFrameIn) -> StoredLidarFrame:
 def latest_lidar_frame(robot_id: str) -> StoredLidarFrame | None:
     with _lock:
         return _lidar_latest.get(robot_id)
+
+
+@app.post("/api/robots/{robot_id}/camera/frame")
+async def receive_camera_frame(
+    robot_id: str,
+    request: Request,
+    x_onplant_camera_key: str | None = Header(default=None, alias="X-OnPlant-Camera-Key"),
+) -> dict[str, Any]:
+    expected_key = os.getenv("ONPLANT_CAMERA_KEY", "").strip()
+    if not expected_key:
+        raise HTTPException(status_code=503, detail="camera upload key is not configured")
+    if x_onplant_camera_key != expected_key:
+        raise HTTPException(status_code=401, detail="invalid camera key")
+
+    body = await request.body()
+    if not body:
+        raise HTTPException(status_code=400, detail="empty frame")
+    if len(body) > 2_500_000:
+        raise HTTPException(status_code=413, detail="frame too large")
+
+    with _lock:
+        _ensure_robot(robot_id)
+        now = _now_iso()
+        _camera_frames[robot_id] = body
+        _camera_frame_times[robot_id] = now
+        _robots[robot_id].last_seen = now
+        current = _display_states.get(robot_id) or DisplayState(updated_at=now)
+        current.camera_visible = True
+        current.updated_at = now
+        _display_states[robot_id] = current
+        _save_state()
+    return {"ok": True, "robot_id": robot_id, "bytes": len(body), "received_at": now}
+
+
+@app.get("/api/robots/{robot_id}/camera/latest")
+def latest_camera_frame(
+    robot_id: str,
+    authorization: str | None = Header(default=None),
+) -> Response:
+    with _lock:
+        user = _require_user(authorization)
+        if user.get("role") != "admin" and user.get("robot_id") != robot_id:
+            raise HTTPException(status_code=403, detail="forbidden")
+        frame = _camera_frames.get(robot_id)
+    if not frame:
+        raise HTTPException(status_code=404, detail="camera frame not available")
+    return Response(
+        content=frame,
+        media_type="image/jpeg",
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @app.post("/api/sensors", response_model=StoredReading)

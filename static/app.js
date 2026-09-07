@@ -256,9 +256,38 @@ function renderPlantAvatar(avatar) {
 function renderCamera(visible) {
   $("cameraState").textContent = visible ? "카메라 표시 중" : "카메라 대기";
   $("videoBox").classList.toggle("camera-on", Boolean(visible));
-  $("cameraText").textContent = visible
-    ? "카메라 화면 표시 상태입니다. 실제 스트림은 로봇 연동 시 자동 연결됩니다."
-    : "카메라 스트리밍은 로봇 카메라 연결 후 표시됩니다.";
+  const image = $("cameraImage");
+  const placeholder = $("cameraPlaceholder");
+  if (!visible || !state.robotId || !image) {
+    if (image) image.classList.add("hidden");
+    if (placeholder) placeholder.classList.remove("hidden");
+    $("cameraText").textContent = "카메라 스트리밍은 로봇 카메라 연결 후 표시됩니다.";
+    return;
+  }
+
+  const token = state.user?.token || "";
+  fetch(`/api/robots/${encodeURIComponent(state.robotId)}/camera/latest?ts=${Date.now()}`, {
+    cache: "no-store",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error("camera frame unavailable");
+      return response.blob();
+    })
+    .then((blob) => {
+      const previous = image.dataset.objectUrl;
+      const next = URL.createObjectURL(blob);
+      image.src = next;
+      image.dataset.objectUrl = next;
+      image.classList.remove("hidden");
+      if (placeholder) placeholder.classList.add("hidden");
+      if (previous) URL.revokeObjectURL(previous);
+    })
+    .catch(() => {
+      image.classList.add("hidden");
+      if (placeholder) placeholder.classList.remove("hidden");
+      $("cameraText").textContent = "카메라 프레임을 기다리는 중입니다.";
+    });
 }
 
 async function refreshHistory() {
@@ -373,6 +402,7 @@ function drawKioskLidar(frame) {
 
 function phaseName(frame) {
   if (!frame) return "WAIT";
+  if (frame.phase) return frame.phase;
   if (frame.state === "EXPLORE") return "조도 탐색(1차)";
   if (frame.state === "RETURN_TO_BEST") return "복귀 이동";
   if (frame.state === "SEEK_LIGHT") return "추가 탐색(2차)";
@@ -384,6 +414,9 @@ function phaseName(frame) {
 
 function phaseRemaining(frame, config = {}) {
   if (!frame) return "--";
+  if (frame.remaining_seconds !== undefined && frame.remaining_seconds !== null) {
+    return `${Math.max(0, Math.ceil(Number(frame.remaining_seconds)))}초`;
+  }
   if (frame.state === "EXPLORE") {
     const total = Number(config.explore_seconds ?? 50);
     return `${Math.max(0, Math.ceil(total - Number(frame.explore_elapsed || 0)))}초`;
@@ -532,7 +565,8 @@ function renderKiosk() {
   $("kioskObstacle").textContent = `${obstacleState}${frame?.points ? ` / ${frame.points.length} pts` : ""}`;
   $("kioskUpdated").textContent = frame?.received_at ? new Date(frame.received_at).toLocaleTimeString() : "대기";
   const headerLines = [
-    `현재 상태: ${frame?.state || "IDLE"}`,
+    `현재 단계: ${phaseName(frame)}`,
+    `세부 상태: ${frame?.detail_state || frame?.state || "IDLE"}`,
     `최근 입력: ${recentInput}`,
     `현재 동작: ${frame?.action || "STOP"}`,
     `현재 조도: ${currentLux}`,
@@ -540,7 +574,6 @@ function renderKiosk() {
     `최고 조도: ${bestLux}`,
     `현재 좌표: ${pose}`,
     `목표 좌표: ${bestCoord}`,
-    `실행 상태: ${phaseName(frame)}`,
     `남은 시간: ${phaseRemaining(frame, config)}`,
     `장애물 상태: ${obstacleState}`,
   ];

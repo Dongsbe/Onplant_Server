@@ -34,6 +34,7 @@ function commandLabel(command) {
 
 function phaseName(frame) {
   if (!frame) return "대기";
+  if (frame.phase) return frame.phase;
   if (frame.state === "EXPLORE") return "조도 탐색(1차)";
   if (frame.state === "RETURN_TO_BEST") return "최적 위치 복귀";
   if (frame.state === "SEEK_LIGHT") return "추가 탐색(2차)";
@@ -54,6 +55,9 @@ function obstacleState(frame) {
 
 function phaseRemaining(frame, config = {}) {
   if (!frame) return "--";
+  if (frame.remaining_seconds !== undefined && frame.remaining_seconds !== null) {
+    return `${Math.max(0, Math.ceil(Number(frame.remaining_seconds)))}초`;
+  }
   if (frame.state === "EXPLORE") {
     const total = Number(config.explore_seconds ?? 50);
     return `${Math.max(0, Math.ceil(total - Number(frame.explore_elapsed || 0)))}초`;
@@ -155,7 +159,8 @@ function renderStatus() {
     ? `(${fmt(frame.best_x, 0)}, ${fmt(frame.best_y, 0)})`
     : "--";
   const lines = [
-    `현재 상태: ${frame?.state || "IDLE"}`,
+    `현재 단계: ${phaseName(frame)}`,
+    `세부 상태: ${frame?.detail_state || frame?.state || "IDLE"}`,
     `최근 입력: ${latestInput()}`,
     `현재 동작: ${frame?.action || "STOP"}`,
     `현재 조도: ${currentLux}`,
@@ -163,7 +168,6 @@ function renderStatus() {
     `최고 조도: ${frame?.best_lux !== undefined && frame?.best_lux !== null ? `${fmt(frame.best_lux, 0)} lx` : "--"}`,
     `현재 좌표: ${pose}`,
     `목표 좌표: ${bestCoord}`,
-    `실행 상태: ${phaseName(frame)}`,
     `남은 시간: ${phaseRemaining(frame, config)}`,
     `장애물 상태: ${obstacleState(frame)}`,
   ];
