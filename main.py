@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -190,6 +191,7 @@ class LlmChatIn(BaseModel):
     message: str = Field(min_length=1, max_length=500)
     username: str = Field(default="demo", max_length=32)
     speak: bool = False
+    robot_key: str | None = Field(default=None, max_length=128)
 
 
 class StoredCommand(CommandIn):
@@ -352,6 +354,24 @@ def _require_admin(authorization: str | None) -> dict[str, str]:
     if user.get("role", "user") != "admin":
         raise HTTPException(status_code=403, detail="admin required")
     return user
+
+
+def _robot_api_key_ok(robot_key: str | None) -> bool:
+    expected = os.getenv("ONPLANT_ROBOT_API_KEY", "").strip()
+    supplied = str(robot_key or "").strip()
+    return bool(expected and supplied and secrets.compare_digest(expected, supplied))
+
+
+def _require_user_or_robot_key(authorization: str | None, robot_key: str | None) -> None:
+    if _robot_api_key_ok(robot_key):
+        return
+    _require_user(authorization)
+
+
+def _require_admin_or_robot_key(authorization: str | None, robot_key: str | None) -> None:
+    if _robot_api_key_ok(robot_key):
+        return
+    _require_admin(authorization)
 
 
 def _user_public(username: str, token: str = "") -> UserPublic:
@@ -1545,6 +1565,8 @@ def llm_chat(robot_id: str, chat: LlmChatIn, authorization: str | None = Header(
         _intent, command_name = _classify_robot_intent(message)
         if command_name:
             _require_admin(authorization)
+        elif not _robot_api_key_ok(chat.robot_key):
+            _require_user(authorization)
         return _process_llm_chat_locked(robot_id, chat)
 
 
