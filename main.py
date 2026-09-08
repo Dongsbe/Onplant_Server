@@ -980,19 +980,20 @@ def _blocked_while_running_reply(state: str) -> str:
 def _nvidia_llm_reply(message: str, system_prompt: str) -> str | None:
     api_key = os.getenv("NVIDIA_API_KEY") or os.getenv("NVIDIA_NIM_API_KEY")
     if not api_key:
+        print("NVIDIA LLM disabled: NVIDIA_API_KEY is not configured")
         return None
 
     base_url = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1").rstrip("/")
     model = os.getenv("NVIDIA_MODEL", "google/gemma-4-31b-it")
-    max_tokens = int(os.getenv("NVIDIA_MAX_TOKENS", "16384"))
+    max_tokens = int(os.getenv("NVIDIA_MAX_TOKENS", "512"))
     temperature = float(os.getenv("NVIDIA_TEMPERATURE", "1"))
     top_p = float(os.getenv("NVIDIA_TOP_P", "0.95"))
-    enable_thinking = os.getenv("NVIDIA_ENABLE_THINKING", "true").lower() in {"1", "true", "yes", "on"}
+    enable_thinking = os.getenv("NVIDIA_ENABLE_THINKING", "false").lower() in {"1", "true", "yes", "on"}
+    prompt = f"{system_prompt}\n\n사용자 질문: {message}\n동스비의 답변:"
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": message},
+            {"role": "user", "content": prompt},
         ],
         "chat_template_kwargs": {"enable_thinking": enable_thinking},
         "temperature": temperature,
@@ -1014,8 +1015,20 @@ def _nvidia_llm_reply(message: str, system_prompt: str) -> str | None:
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
             data = json.loads(response.read().decode("utf-8"))
-        return data["choices"][0]["message"]["content"].strip()
-    except (KeyError, OSError, TimeoutError, urllib.error.URLError):
+        reply = str(data["choices"][0]["message"]["content"]).strip()
+        if not reply:
+            print("NVIDIA LLM returned an empty reply")
+            return None
+        return reply
+    except urllib.error.HTTPError as exc:
+        try:
+            detail = exc.read().decode("utf-8", errors="replace")
+        except OSError:
+            detail = ""
+        print(f"NVIDIA LLM HTTP {exc.code}: {detail[:1000]}")
+        return None
+    except (KeyError, ValueError, OSError, TimeoutError, urllib.error.URLError) as exc:
+        print(f"NVIDIA LLM request failed: {type(exc).__name__}: {exc}")
         return None
 
 
