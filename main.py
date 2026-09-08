@@ -1106,19 +1106,24 @@ def _transcribe_audio(audio_path: Path) -> str:
         "ONPLANT_STT_PROMPT",
         "동스비. 오늘 상태 어때. 최적 조도 찾아줘. 멈춰. 오늘 날씨 어때.",
     )
-    segments, _info = _stt_model_cache.transcribe(
-        str(audio_path),
-        language="ko",
-        vad_filter=True,
-        beam_size=5,
-        temperature=0,
-        condition_on_previous_text=False,
-        initial_prompt=initial_prompt,
-    )
-    text = " ".join(segment.text.strip() for segment in segments).strip()
-    if not text:
-        raise RuntimeError("STT returned empty text")
-    return text
+    for vad_filter in (True, False):
+        segments, _info = _stt_model_cache.transcribe(
+            str(audio_path),
+            language="ko",
+            vad_filter=vad_filter,
+            beam_size=5,
+            temperature=0,
+            condition_on_previous_text=False,
+            initial_prompt=initial_prompt,
+        )
+        text = " ".join(segment.text.strip() for segment in segments).strip()
+        if text:
+            if not vad_filter:
+                print("STT VAD retry recovered transcript:", text)
+            return text
+        if vad_filter:
+            print("STT returned empty text with VAD; retrying without VAD")
+    raise RuntimeError("STT returned empty text")
 
 
 def _make_edge_tts_audio(text: str) -> Path | None:
