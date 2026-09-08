@@ -1097,14 +1097,15 @@ def _transcribe_audio(audio_path: Path) -> str:
         raise RuntimeError("faster-whisper is not installed on the server PC") from exc
 
     if _stt_model_cache is None:
-        model_name = os.getenv("ONPLANT_STT_MODEL", "base")
+        model_name = os.getenv("ONPLANT_STT_MODEL", "small")
         device = os.getenv("ONPLANT_STT_DEVICE", "cpu")
         compute_type = os.getenv("ONPLANT_STT_COMPUTE_TYPE", "int8")
         _stt_model_cache = WhisperModel(model_name, device=device, compute_type=compute_type)
 
     initial_prompt = os.getenv(
         "ONPLANT_STT_PROMPT",
-        "동스비. 오늘 상태 어때. 최적 조도 찾아줘. 멈춰. 오늘 날씨 어때.",
+        "동스비. 오늘 상태 어때. 최적 조도 찾아줘. 멈춰. "
+        "오늘 진주 날씨 어때. 오늘 진주 날씨 알려줘.",
     )
     for vad_filter in (True, False):
         segments, _info = _stt_model_cache.transcribe(
