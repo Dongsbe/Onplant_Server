@@ -484,7 +484,7 @@ async function refreshLidar() {
 
 function commandLabel(command) {
   if (command === "start_light_search") return "최적 조도 탐색";
-  if (command === "start_straight_calibration") return "직진 거리 보정";
+  if (command === "start_straight_calibration") return "테스트베드 학습";
   if (command === "stop") return "정지";
   if (command === "speak") return "음성 응답";
   if (String(command || "").startsWith("remote-")) return "리모컨 입력";
@@ -745,7 +745,7 @@ async function sendRobotCommand(command, value) {
   });
   const notices = {
     start_light_search: "최적 조도 탐색 명령을 보냈습니다.",
-    start_straight_calibration: `${value} cm 직진 보정 명령을 보냈습니다.`,
+    start_straight_calibration: `${value} cm 테스트베드 학습을 시작합니다.`,
     stop: "정지 명령을 보냈습니다.",
   };
   showToast(notices[command] || "로봇 명령을 보냈습니다.");
@@ -804,7 +804,7 @@ document.addEventListener("click", async (event) => {
     try {
       await sendRobotCommand("start_straight_calibration", course);
     } catch (error) {
-      showToast(error.message.includes("admin required") ? "관리자 권한이 필요합니다." : "직진 보정 명령 전송 실패");
+      showToast(error.message.includes("admin required") ? "관리자 권한이 필요합니다." : "테스트베드 학습 명령 전송 실패");
       console.error(error);
     }
   }
