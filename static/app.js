@@ -484,6 +484,7 @@ async function refreshLidar() {
 
 function commandLabel(command) {
   if (command === "start_light_search") return "최적 조도 탐색";
+  if (command === "start_straight_calibration") return "직진 거리 보정";
   if (command === "stop") return "정지";
   if (command === "speak") return "음성 응답";
   if (String(command || "").startsWith("remote-")) return "리모컨 입력";
@@ -742,7 +743,12 @@ async function sendRobotCommand(command, value) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ command, value, username: state.user?.username || "demo" }),
   });
-  showToast(command === "stop" ? "정지 명령을 보냈습니다." : "최적 조도 탐색 명령을 보냈습니다.");
+  const notices = {
+    start_light_search: "최적 조도 탐색 명령을 보냈습니다.",
+    start_straight_calibration: `${value} cm 직진 보정 명령을 보냈습니다.`,
+    stop: "정지 명령을 보냈습니다.",
+  };
+  showToast(notices[command] || "로봇 명령을 보냈습니다.");
   await refreshCommands();
 }
 
@@ -791,6 +797,16 @@ document.addEventListener("click", async (event) => {
   if (target.id === "checkJinjuWeather") {
     event.preventDefault();
     await sendChatCommand("오늘 진주 날씨 알려줘");
+  }
+  if (target.id === "calibrate285" || target.id === "calibrate325") {
+    event.preventDefault();
+    const course = target.id === "calibrate285" ? "285" : "325";
+    try {
+      await sendRobotCommand("start_straight_calibration", course);
+    } catch (error) {
+      showToast(error.message.includes("admin required") ? "관리자 권한이 필요합니다." : "직진 보정 명령 전송 실패");
+      console.error(error);
+    }
   }
   if (target.id === "stopRobot") {
     event.preventDefault();
