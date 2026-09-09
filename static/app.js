@@ -746,10 +746,11 @@ async function sendRobotCommand(command, value) {
   await refreshCommands();
 }
 
-async function sendChatCommand() {
+async function sendChatCommand(messageOverride = null) {
   if (!isAdmin()) return showToast("관리자만 웹에서 명령과 대화를 전송할 수 있습니다.");
   const input = $("chatCommandInput");
-  const message = input.value.trim();
+  const isPreset = typeof messageOverride === "string";
+  const message = (isPreset ? messageOverride : input.value).trim();
   if (!message) return showToast("명령이나 질문을 입력하세요.");
   const replyBox = $("chatReply");
   replyBox.classList.remove("hidden");
@@ -761,7 +762,7 @@ async function sendChatCommand() {
       body: JSON.stringify({ message, username: state.user?.username || "demo", speak: true }),
     });
     replyBox.textContent = result.reply ? "로봇 스피커로 응답을 보냈습니다." : "명령을 처리했습니다.";
-    input.value = "";
+    if (!isPreset) input.value = "";
     await refreshCommands();
     await refreshSummary();
   } catch (error) {
@@ -782,6 +783,14 @@ document.addEventListener("click", async (event) => {
       showToast(error.message.includes("admin required") ? "관리자 권한이 필요합니다." : "탐색 명령 전송 실패");
       console.error(error);
     }
+  }
+  if (target.id === "showStatus") {
+    event.preventDefault();
+    await sendChatCommand("오늘 상태 어때?");
+  }
+  if (target.id === "checkJinjuWeather") {
+    event.preventDefault();
+    await sendChatCommand("오늘 진주 날씨 알려줘");
   }
   if (target.id === "stopRobot") {
     event.preventDefault();
