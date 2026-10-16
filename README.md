@@ -25,6 +25,8 @@ OnPlant Server는 Raspberry Pi 로봇과 웹 대시보드가 주고받는 데이
 
 ## 시스템 흐름
 
+![OnPlant 시스템 구성 및 데이터 흐름도](assets/system-data-flow.png)
+
 ```text
 Raspberry Pi ── 센서 데이터 / 제어 요청 ──▶ FastAPI Server ──▶ MySQL
                                                 │
